@@ -35,8 +35,14 @@ body {
 
 [data-theme="light"] textarea,
 [data-theme="light"] select,
-[data-theme="light"] input[type="text"] {
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="number"] {
     color: #101322 !important;
+    background-color: rgba(255, 255, 255, 0.92) !important;
+}
+[data-theme="light"] textarea::placeholder,
+[data-theme="light"] input::placeholder {
+    color: rgba(16, 19, 34, 0.45) !important;
 }
 
 /* 2026 Glassmorphism Panels */
@@ -204,6 +210,9 @@ input[type=range]::-webkit-slider-thumb {
     opacity: 0.7;
 }
 .glossary-row button:hover { opacity: 1; }
+.glossary-row .glossary-edit-btn { color: #00f3ff; }
+.glossary-row .glossary-save-btn { color: #00ffaa; opacity: 1; padding: 0 6px; }
+.glossary-row .glossary-cancel-btn { color: #ff0055; padding: 0 6px; }
 
 /* The smallest meta/log text (Tailwind's text-[10px]) is hard to read in Myanmar (Padauk),
    which needs a bit more room per glyph than Latin text at the same pixel size. */
