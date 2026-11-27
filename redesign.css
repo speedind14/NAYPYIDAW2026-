@@ -59,3 +59,47 @@ html[data-theme=dark] #keyModal .sheet{background:#0b1220;color:#e2e8f0}
 #closeKeysBtn{width:36px;height:36px;border-radius:50%;background:rgba(128,128,128,.15)}
 @media(min-width:768px){#keyModal{align-items:center}#keyModal .sheet{border-radius:24px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== v3: readable text, nicer buttons, Settings-style key sheet ===== */
+html,body{max-width:100%;overflow-x:hidden}
+body{font-size:15px}
+.text-xs{font-size:13.5px!important;line-height:1.5!important}
+.text-\[10px\]{font-size:12.5px!important}
+main section,main .holo-glass{min-width:0}
+@media(max-width:767px){main .flex>*{min-width:0}main button{white-space:normal;line-height:1.25}}
+/* header like the app */
+header .w-12.h-12{background:var(--grad)!important;border:0!important;box-shadow:0 6px 16px rgba(229,50,45,.3)!important}
+header .w-12.h-12 i{color:#fff!important}
+html[data-theme] #openKeysBtn{background:var(--grad)!important;color:#fff!important;border:0!important;border-radius:999px!important;padding:8px 16px!important;font-weight:700;box-shadow:0 6px 16px rgba(229,50,45,.28)}
+html[data-theme] #openKeysBtn i{color:#fff!important}
+/* soft tinted blocks (were washed-out blue/grey) */
+[data-theme=light] [class*="-900/"],[data-theme=light] [class*="-800/"],[data-theme=light] [class*="-950/"]{background:#fff1ea!important;color:var(--ink)!important;border-color:#f6d9cc!important}
+/* buttons */
+html[data-theme] main button{min-height:44px;border-radius:14px;font-weight:600;font-size:14px;transition:transform .12s,box-shadow .12s}
+html[data-theme] main button:active{transform:scale(.97)}
+[data-theme=light] main button:not([class*="bg-gradient"]):not([class*="600"]):not([class*="-900/"]):not([class*="-800/"]){background:#fff!important;color:var(--ink)!important;border:1px solid var(--line)!important;box-shadow:0 2px 8px rgba(120,60,40,.06)}
+[data-theme=light] main button:not([class*="bg-gradient"]):not([class*="600"]) i{color:var(--b1)!important}
+html[data-theme] main button:disabled{opacity:.5}
+/* nav labels: short on phone, none on rail, full on wide sidebar (no more "TEXT TO...") */
+html[data-theme] body nav .tab-btn span{display:block;overflow:visible;-webkit-line-clamp:unset}
+nav .lbl-full{display:none!important}
+nav .lbl-short{display:block!important;font-size:11.5px;font-weight:600}
+@media(min-width:1024px){nav .lbl-short{display:none!important}}
+@media(min-width:1280px){nav .lbl-full{display:block!important}}
+/* API keys: full-screen page on phone, like Settings in the app */
+#keyModal .sheet{background:var(--bg)}
+#keyModal .sheet-head{justify-content:flex-start;gap:12px;margin-bottom:14px}
+#closeKeysBtn{flex:none;background:#fff;border:1px solid var(--line)}
+@media(max-width:767px){#keyModal{align-items:stretch}#keyModal .sheet{height:100%;max-height:100%;border-radius:0}}
+.kcard{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 6px 24px rgba(120,60,40,.07)}
+html[data-theme=dark] .kcard{background:#111a2e;border-color:#1e2a44}
+html[data-theme=dark] #keyModal .sheet{background:#0b1220}
+.krow{border-bottom:1px solid var(--line)}.krow:last-child{border-bottom:0}
+.krow-main{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.kico{flex:none;width:40px;height:40px;border-radius:12px;background:#fdebe6;color:var(--b1);display:grid;place-items:center}
+.ktxt{flex:1;min-width:0}.ktxt b{display:block;font-size:15px}
+.ktxt small{font-size:12.5px;color:var(--mute)}.ktxt small.ok{color:#1f8f55}
+.kbtn{flex:none;padding:8px 18px;border-radius:999px;font-weight:700;font-size:13px}
+.kbtn.add{background:var(--grad);color:#fff}
+.kbtn.rep{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.kedit{padding:0 14px 14px}.kedit[hidden]{display:none}

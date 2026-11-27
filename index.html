@@ -45,7 +45,7 @@
     </script>
 
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="redesign.css?v=2">
+    <link rel="stylesheet" href="redesign.css?v=3">
     <script>try{if(!localStorage.getItem('neoyangon_theme'))localStorage.setItem('neoyangon_theme','light')}catch(e){}</script>
 </head>
 
@@ -106,19 +106,19 @@
         <div class="holo-glass holo-corner p-2 rounded-xl flex flex-wrap gap-2 border-purple-500/30">
             <button id="tabTranscribeBtn" class="tab-btn flex-1 min-w-[150px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-orbitron font-bold text-xs sm:text-sm tracking-widest transition-all" data-view="transcribe">
                 <i class="fa-solid fa-microphone-lines"></i>
-                <span>မီဒီယာ → SRT (TRANSCRIBE)</span>
+                <span class="lbl-full">မီဒီယာ → SRT (TRANSCRIBE)</span><span class="lbl-short">မီဒီယာ → SRT</span>
             </button>
             <button id="tabTranslatorBtn" class="tab-btn flex-1 min-w-[150px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-orbitron font-bold text-xs sm:text-sm tracking-widest transition-all" data-view="translator">
                 <i class="fa-solid fa-closed-captioning"></i>
-                <span>SRT ဘာသာပြန် (TRANSLATOR)</span>
+                <span class="lbl-full">SRT ဘာသာပြန် (TRANSLATOR)</span><span class="lbl-short">SRT ဘာသာပြန်</span>
             </button>
             <button id="tabTtsBtn" class="tab-btn flex-1 min-w-[150px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-orbitron font-bold text-xs sm:text-sm tracking-widest transition-all" data-view="tts">
                 <i class="fa-solid fa-wave-square"></i>
-                <span>စာသား → အသံ (TEXT TO SPEECH)</span>
+                <span class="lbl-full">စာသား → အသံ (TEXT TO SPEECH)</span><span class="lbl-short">စာသား → အသံ</span>
             </button>
             <button id="tabRecapBtn" class="tab-btn flex-1 min-w-[150px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-orbitron font-bold text-xs sm:text-sm tracking-widest transition-all" data-view="recap">
                 <i class="fa-solid fa-clapperboard"></i>
-                <span>AI RECAP STUDIO (ONE CLICK)</span>
+                <span class="lbl-full">AI RECAP STUDIO (ONE CLICK)</span><span class="lbl-short">AI Recap</span>
             </button>
         </div>
     </nav>
@@ -1149,15 +1149,16 @@
 
     <div id="keyModal" role="dialog" aria-modal="true" aria-labelledby="keyModalTitle">
         <div class="sheet">
-            <div class="sheet-head"><h2 id="keyModalTitle">API Keys</h2><button id="closeKeysBtn" aria-label="ပိတ်ရန်"><i class="fa-solid fa-xmark"></i></button></div>
-            <p class="note">Key အားလုံးကို ဒီနေရာမှာ တစ်ခါတည်း ထည့်ပါ — tab အားလုံးက ဒီ key တွေကိုပဲ သုံးပါတယ်။ ဒီ browser ထဲမှာပဲ သိမ်းပါတယ်။</p>
-            <h3>Gemini (Text to Speech · Translator · Recap)</h3>
+            <div class="sheet-head"><button id="closeKeysBtn" aria-label="ပြန်ထွက်ရန်"><i class="fa-solid fa-arrow-left"></i></button><h2 id="keyModalTitle">API keys</h2></div>
+            <div id="keyRows" class="kcard"></div>
+            <p class="note" style="margin:10px 4px">Key အားလုံးကို ဒီနေရာမှာ တစ်ခါတည်း ထည့်ပါ။ Add ကိုနှိပ်ပြီး ထည့်၊ အောက်က SAVE နှိပ်ပါ။ ဒီ browser ထဲမှာပဲ သိမ်းပါတယ်။</p>
+            <h3>Gemini · Models &amp; Save</h3>
             <div id="keyModalGemini"></div>
-            <h3>Transcribe (Gladia · Groq · AssemblyAI)</h3>
+            <h3>Transcribe · Models &amp; Save</h3>
             <div id="keyModalTranscribe"></div>
         </div>
     </div>
-    <script src="script.js?v=2"></script>
-    <script src="ui.js?v=2"></script>
+    <script src="script.js?v=3"></script>
+    <script src="ui.js?v=3"></script>
 </body>
 </html>
