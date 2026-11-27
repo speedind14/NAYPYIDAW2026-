@@ -183,10 +183,11 @@
   run('#rsVo', async () => {
     const subs = st.subs, total = subs.length;
     if (!total || subs.every(s => !(s.translatedText || '').trim())) return log('⚠ ဘာသာပြန်အရင်လုပ်ပါ');
-    const eng = $('#rsEng').value, edgeUrl = $('#rsEdgeUrl').value.trim();
+    const fixEdgeUrl = u => { try { const x = new URL(u); if (x.pathname === '/' || x.pathname === '') x.pathname = '/tts'; x.search = ''; x.hash = ''; return x.toString(); } catch (e) { return u; } };
+    const eng = $('#rsEng').value, edgeUrl = fixEdgeUrl($('#rsEdgeUrl').value.trim());
     if (eng === 'edge') { if (!/^https?:\/\//.test(edgeUrl)) return log('⚠ Edge Worker URL ထည့်ပါ (edge-tts-worker.js ကို Cloudflare မှာ deploy လုပ်ပြီး URL ကူးထည့်ပါ)'); }
     else if (!need()) return;
-    ttsAborted = false;
+    ttsAborted = false; if (eng === 'edge') log('Edge TTS → ' + edgeUrl);
     const voice = $('#rsVoice').value, speed = +$('#rsSpeed').value, pause = $('#rsPause').value === '1' ? 0.18 : 0.02;
     const clips = new Array(total).fill(null); let next = 0, done = 0;
     async function worker() {
