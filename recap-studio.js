@@ -13,6 +13,7 @@
   <section class="rs-card holo-glass"><h3>2 · Transcription</h3>
     <div class="rs-row"><label>Language<select id="rsTrLang" class="rs-in">${opt('auto', 'Auto-detect')}${opt('my', 'မြန်မာ (Myanmar)')}${opt('en', 'English')}${opt('th', 'ภาษาไทย (Thai)')}${opt('zh', '中文 (Chinese)')}${opt('ja', '日本語 (Japanese)')}${opt('ko', '한국어 (Korean)')}</select></label>
     <label>Provider<select id="rsTrProv" class="rs-in">${opt('auto', 'Auto (အားလုံး လှည့်သုံး)')}${opt('gladia', 'Gladia')}${opt('groq', 'Groq')}${opt('assemblyai', 'AssemblyAI')}</select></label></div>
+    <label>Cue အရှည် (စာကြောင်း အရေအတွက်)<select id="rsTrLen" class="rs-in">${opt('14', 'တို — cue အများဆုံး (14)')}${opt('24', 'အလယ် (24)')}${opt('36', 'ရှည် — cue နည်း (36)')}${opt('50', 'အရှည်ဆုံး — cue အနည်းဆုံး (50)')}</select></label>
     <button id="rsTr" class="rs-btn">စာထုတ်မည်</button>
     <div class="rs-note">Gladia / Groq / AssemblyAI key တွေကို API KEYS မှာ ထည့်ထားရပါမယ်။ Provider ရွေးရင် အဲဒါကို အဓိကသုံးပြီး မရမှ ကျန်တာကို သုံးပါမယ်။</div></section>
   <section class="rs-card holo-glass"><h3>3 · Translation</h3>
@@ -115,6 +116,8 @@
     };
   });
 
+  $('#rsTrLen').value = safeLsGet('neoyangon_recap_cue_len') || '36';
+  $('#rsTrLen').addEventListener('change', e => safeLsSet('neoyangon_recap_cue_len', e.target.value));
   $('#rsTrProv').value = getProviderOrder();
   $('#rsTrProv').addEventListener('change', e => {
     safeLsSet(LS_TRANSCRIBE_PROVIDER_ORDER, e.target.value);
@@ -130,7 +133,18 @@
     log('Audio decode လုပ်နေသည်...');
     const buf = await decodeMediaToAudioBuffer(st.file, m => log(m)); st.dur = buf.duration;
     log('စာထုတ်နေသည်... (' + $('#rsTrProv').selectedOptions[0].text + ')');
-    const { srt, providerCounts } = await transcribeMediaWithWorkers(buf, chunkSec, workers, $('#rsTrLang').value, maxRetries, timeoutSec, m => log(m), true);
+    // Cue length: script.js's applyCueMaxChars() caps the box at 8-30 and runs inside assemblePhraseSubs(),
+    // so for this run only we swap it for our own and restore everything afterwards.
+    const n = +$('#rsTrLen').value, dur = { 14: [4.5, 6], 24: [6, 8], 36: [8, 10], 50: [10, 12] }[n] || [8, 10];
+    const keep = { cjk: { ...PHRASE_OPTS.cjk }, latin: { ...PHRASE_OPTS.latin } }, keepFn = window.applyCueMaxChars;
+    window.applyCueMaxChars = () => {
+      Object.assign(PHRASE_OPTS.cjk, { maxChars: n, minChars: Math.min(6, Math.floor(n / 3)), maxDurSec: dur[0] });
+      Object.assign(PHRASE_OPTS.latin, { maxChars: n * 3, minChars: Math.min(24, n), maxDurSec: dur[1] });
+    };
+    let res;
+    try { res = await transcribeMediaWithWorkers(buf, chunkSec, workers, $('#rsTrLang').value, maxRetries, timeoutSec, m => log(m), true); }
+    finally { window.applyCueMaxChars = keepFn; Object.assign(PHRASE_OPTS.cjk, keep.cjk); Object.assign(PHRASE_OPTS.latin, keep.latin); }
+    const { srt, providerCounts } = res;
     st.subs = srt ? parseSrt(srt) : []; if (!st.subs.length) throw new Error('စာ မထွက်ပါ');
     const used = Object.entries(providerCounts).map(([p, c]) => p.toUpperCase() + ':' + c).join(' ');
     renderSegs(); mark(2); log('✓ Segments ' + st.subs.length + ' ခု' + (used ? ' · ' + used : ''));
