@@ -1,4 +1,4 @@
-// Movie Recap Studio — replaces the AI Recap tab. Reuses script.js: Gemini transcribe, translate and TTS.
+// Movie Recap Studio — replaces the AI Recap tab. Reuses script.js: Transcribe = Gladia/Groq/AssemblyAI key pool (chunked, auto-rotating); Translate + TTS = Gemini.
 // Flow: Import -> Transcribe -> Translate -> Voice Over -> Render (canvas + MediaRecorder, real-time, in the browser).
 (function () {
   const root = document.getElementById('recapView');
@@ -11,7 +11,10 @@
   <section class="rs-card holo-glass"><h3>1 · Video Import</h3>
     <input id="rsFile" class="rs-in" type="file" accept="video/*,audio/*"><video id="rsInV" controls playsinline hidden></video><div id="rsInfo" class="rs-note">ဗီဒီယို ရွေးပါ (MP4 / MOV / MKV)</div></section>
   <section class="rs-card holo-glass"><h3>2 · Transcription</h3>
-    <button id="rsTr" class="rs-btn">စာထုတ်မည် (Gemini)</button></section>
+    <div class="rs-row"><label>Language<select id="rsTrLang" class="rs-in">${opt('auto', 'Auto-detect')}${opt('my', 'မြန်မာ (Myanmar)')}${opt('en', 'English')}${opt('th', 'ภาษาไทย (Thai)')}${opt('zh', '中文 (Chinese)')}${opt('ja', '日本語 (Japanese)')}${opt('ko', '한국어 (Korean)')}</select></label>
+    <label>Provider<select id="rsTrProv" class="rs-in">${opt('auto', 'Auto (အားလုံး လှည့်သုံး)')}${opt('gladia', 'Gladia')}${opt('groq', 'Groq')}${opt('assemblyai', 'AssemblyAI')}</select></label></div>
+    <button id="rsTr" class="rs-btn">စာထုတ်မည်</button>
+    <div class="rs-note">Gladia / Groq / AssemblyAI key တွေကို API KEYS မှာ ထည့်ထားရပါမယ်။ Provider ရွေးရင် အဲဒါကို အဓိကသုံးပြီး မရမှ ကျန်တာကို သုံးပါမယ်။</div></section>
   <section class="rs-card holo-glass"><h3>3 · Translation</h3>
     <label>Target language<select id="rsLang" class="rs-in">${opt('Myanmar (Burmese)', 'Myanmar')}${opt('Thai', 'Thai')}${opt('English', 'English')}</select></label>
     <button id="rsTl" class="rs-btn">ဘာသာပြန်မည်</button>
@@ -40,7 +43,7 @@
     <div class="rs-note">ဗီဒီယိုကို အသံအလိုက် အမြန်/အနှေး ညှိပြီး ထုတ်မှာမို့ ထွက်တဲ့အရှည်က အသံအရှည်အတိုင်း ဖြစ်ပါမယ်။ Render ပြီးတဲ့အထိ ဒီစာမျက်နှာကို ဖွင့်ထားပါ။</div>
     <h4 class="rs-h4">Output</h4><div id="rsOut"><div class="rs-note">Render ပြီးရင် ရလဒ်ဗီဒီယို ဒီမှာ ပေါ်မယ်။</div></div></section>
   <div class="rs-bar"><i id="rsBar"></i></div>
-  <div id="rsLog" class="rs-log">အဆင့် ၁ ကစပြီး လုပ်ပါ။ Gemini key ကို API KEYS မှာ ထည့်ထားရပါမယ်။</div>`;
+  <div id="rsLog" class="rs-log">အဆင့် ၁ ကစပြီး လုပ်ပါ။ Transcribe အတွက် Gladia/Groq/AssemblyAI key၊ Translate/Voice အတွက် Gemini key ကို API KEYS မှာ ထည့်ထားရပါမယ်။</div>`;
   root.appendChild(el);
   const $ = s => el.querySelector(s);
   const st = { file: null, dur: 0, subs: [], mixed: null, cues: [], plan: [], stop: false, url: '' };
@@ -48,6 +51,7 @@
   const bar = p => { $('#rsBar').style.width = Math.round(p * 100) + '%'; };
   const mark = n => { for (let i = 1; i <= n; i++) $('[data-s="' + i + '"]').classList.add('on'); };
   const need = () => { if (getKeys().length) return true; log('⚠ Gemini key မရှိပါ — အပေါ်က API KEYS မှာ ထည့်ပါ'); return false; };
+  const needTr = () => { if (getTranscribeCredentialPool().length) return true; log('⚠ Gladia / Groq / AssemblyAI key မရှိပါ — အပေါ်က API KEYS မှာ အနည်းဆုံး တစ်ခု ထည့်ပါ'); return false; };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const run = (id, fn) => $(id).addEventListener('click', async e => {
     const b = e.currentTarget; b.disabled = true; st.stop = false;
@@ -111,14 +115,25 @@
     };
   });
 
+  $('#rsTrProv').value = getProviderOrder();
+  $('#rsTrProv').addEventListener('change', e => {
+    safeLsSet(LS_TRANSCRIBE_PROVIDER_ORDER, e.target.value);
+    const sync = document.getElementById('transcribeProviderOrder'); if (sync) sync.value = e.target.value;
+  });
+
   run('#rsTr', async () => {
-    if (!st.file) return log('⚠ ဗီဒီယို အရင်ရွေးပါ'); if (!need()) return;
-    transcribeAborted = false; log('Audio decode လုပ်နေသည်...');
-    const buf = await decodeMediaToAudioBuffer(st.file, log); st.dur = buf.duration;
-    log('စာထုတ်နေသည်...');
-    const srt = await geminiTranscribeWithWorkers(buf, 60, 3, null, 2, 120, log, true);
-    st.subs = parseSrt(srt); if (!st.subs.length) throw new Error('စာ မထွက်ပါ');
-    renderSegs(); mark(2); log('✓ Segments ' + st.subs.length + ' ခု');
+    if (!st.file) return log('⚠ ဗီဒီယို အရင်ရွေးပါ'); if (!needTr()) return;
+    transcribeAborted = false;
+    const num = (inp, d, min) => Math.max(parseInt(inp && inp.value, 10) || d, min);
+    const maxRetries = num(transcribeMaxRetriesInput, 2, 1), timeoutSec = num(transcribeTimeoutSecInput, 120, 10),
+          chunkSec = num(transcribeChunkSizeInput, 60, 15), workers = num(transcribeWorkerCountInput, 3, 1);
+    log('Audio decode လုပ်နေသည်...');
+    const buf = await decodeMediaToAudioBuffer(st.file, m => log(m)); st.dur = buf.duration;
+    log('စာထုတ်နေသည်... (' + $('#rsTrProv').selectedOptions[0].text + ')');
+    const { srt, providerCounts } = await transcribeMediaWithWorkers(buf, chunkSec, workers, $('#rsTrLang').value, maxRetries, timeoutSec, m => log(m), true);
+    st.subs = srt ? parseSrt(srt) : []; if (!st.subs.length) throw new Error('စာ မထွက်ပါ');
+    const used = Object.entries(providerCounts).map(([p, c]) => p.toUpperCase() + ':' + c).join(' ');
+    renderSegs(); mark(2); log('✓ Segments ' + st.subs.length + ' ခု' + (used ? ' · ' + used : ''));
   });
 
   run('#rsTl', async () => {
