@@ -33,8 +33,8 @@ html[data-theme] #openKeysBtn i{color:#fff!important}
 /* buttons */
 html[data-theme] main button{min-height:42px;border-radius:14px;font-weight:600;font-size:13.5px;transition:transform .12s}
 html[data-theme] main button:active{transform:scale(.97)}
-html[data-theme] main button:not([class*="bg-gradient"]):not([class*="600"]):not([class*="-900/"]):not([class*="-800/"]){background:var(--card)!important;color:var(--ink)!important;border:1px solid var(--line)!important}
-html[data-theme] main button:not([class*="bg-gradient"]):not([class*="600"]) i{color:var(--b1)!important}
+html[data-theme] main button[class]{background:var(--grad)!important;color:#fff!important;border:0!important;box-shadow:0 6px 16px rgba(229,50,45,.25)}
+html[data-theme] main button[class] *{color:#fff!important}
 html[data-theme] button[class*="bg-gradient"],html[data-theme] button[class*="600"]{background:var(--grad)!important;color:#fff!important;border:0!important;border-radius:14px!important;box-shadow:0 6px 16px rgba(229,50,45,.25)}
 html[data-theme] button[class*="bg-gradient"] i,html[data-theme] button[class*="600"] i{color:#fff!important}
 html[data-theme] main button:disabled{opacity:.5}
