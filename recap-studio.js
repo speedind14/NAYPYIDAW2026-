@@ -1,4 +1,4 @@
-// Movie Recap Studio — replaces the AI Recap tab. Reuses script.js: Transcribe = Gladia/Groq/AssemblyAI key pool (chunked, auto-rotating); Translate + TTS = Gemini.
+// Movie Recap Studio — replaces the AI Recap tab. Reuses script.js: Transcribe = Gladia/Groq/AssemblyAI key pool (chunked, auto-rotating); Translate = Gemini; Voice Over = Edge TTS (free, via your Cloudflare Worker) or Gemini.
 // Flow: Import -> Transcribe -> Translate -> Voice Over -> Render (canvas + MediaRecorder, real-time, in the browser).
 (function () {
   const root = document.getElementById('recapView');
@@ -21,6 +21,8 @@
     <button id="rsTl" class="rs-btn">ဘာသာပြန်မည်</button>
     <div id="rsSegs" class="rs-segs"></div></section>
   <section class="rs-card holo-glass"><h3>4 · Voice Over</h3>
+    <label>Voice engine<select id="rsEng" class="rs-in">${opt('edge', 'Edge TTS (အခမဲ့ · key မလို)')}${opt('gemini', 'Gemini (key လို)')}</select></label>
+    <label id="rsEdgeWrap">Edge Worker URL<input id="rsEdgeUrl" class="rs-in" type="text" placeholder="https://xxxx.workers.dev"></label>
     <label>Voice<select id="rsVoice" class="rs-in"></select></label>
     <div class="rs-row"><label>Speed <b id="rsSpeedV">1.10x</b><input id="rsSpeed" type="range" min="0.9" max="1.4" step="0.05" value="1.1"></label>
     <label>စာကြောင်းကြား နားချိန်<select id="rsPause" class="rs-in">${opt('1', 'ထည့်မည်')}${opt('0', 'မထည့်')}</select></label></div>
@@ -44,7 +46,7 @@
     <div class="rs-note">ဗီဒီယိုကို အသံအလိုက် အမြန်/အနှေး ညှိပြီး ထုတ်မှာမို့ ထွက်တဲ့အရှည်က အသံအရှည်အတိုင်း ဖြစ်ပါမယ်။ Render ပြီးတဲ့အထိ ဒီစာမျက်နှာကို ဖွင့်ထားပါ။</div>
     <h4 class="rs-h4">Output</h4><div id="rsOut"><div class="rs-note">Render ပြီးရင် ရလဒ်ဗီဒီယို ဒီမှာ ပေါ်မယ်။</div></div></section>
   <div class="rs-bar"><i id="rsBar"></i></div>
-  <div id="rsLog" class="rs-log">အဆင့် ၁ ကစပြီး လုပ်ပါ။ Transcribe အတွက် Gladia/Groq/AssemblyAI key၊ Translate/Voice အတွက် Gemini key ကို API KEYS မှာ ထည့်ထားရပါမယ်။</div>`;
+  <div id="rsLog" class="rs-log">အဆင့် ၁ ကစပြီး လုပ်ပါ။ Transcribe အတွက် Gladia/Groq/AssemblyAI key၊ Translate အတွက် Gemini key လိုပါမယ်၊ Voice Over ကိုတော့ Edge TTS (အခမဲ့) နဲ့ လုပ်လို့ရပါတယ်။</div>`;
   root.appendChild(el);
   const $ = s => el.querySelector(s);
   const st = { file: null, dur: 0, subs: [], mixed: null, cues: [], plan: [], stop: false, url: '' };
@@ -58,7 +60,28 @@
     const b = e.currentTarget; b.disabled = true; st.stop = false;
     try { await fn(); } catch (err) { log('✗ ' + ((err && err.message) || err)); } finally { b.disabled = false; }
   });
-  VOICES.forEach(v => $('#rsVoice').insertAdjacentHTML('beforeend', opt(v.id, v.name)));
+  const EDGE_VOICES = [['my-MM-ThihaNeural', 'မြန်မာ · Thiha (ကျား)'], ['my-MM-NilarNeural', 'မြန်မာ · Nilar (မ)'],
+    ['th-TH-NiwatNeural', 'Thai · Niwat (ကျား)'], ['th-TH-PremwadeeNeural', 'Thai · Premwadee (မ)'],
+    ['en-US-GuyNeural', 'English · Guy (ကျား)'], ['en-US-AriaNeural', 'English · Aria (မ)'],
+    ['zh-CN-YunxiNeural', 'Chinese · Yunxi (ကျား)'], ['zh-CN-XiaoxiaoNeural', 'Chinese · Xiaoxiao (မ)']];
+  const fillVoices = () => {
+    const edge = $('#rsEng').value === 'edge', sel = $('#rsVoice');
+    sel.innerHTML = (edge ? EDGE_VOICES.map(([id, n]) => opt(id, n)) : VOICES.map(v => opt(v.id, v.name))).join('');
+    $('#rsEdgeWrap').style.display = edge ? '' : 'none';
+  };
+  $('#rsEng').value = safeLsGet('neoyangon_recap_engine') || 'edge';
+  $('#rsEdgeUrl').value = safeLsGet('neoyangon_edge_worker') || '';
+  $('#rsEng').addEventListener('change', () => { safeLsSet('neoyangon_recap_engine', $('#rsEng').value); fillVoices(); });
+  $('#rsEdgeUrl').addEventListener('change', e => safeLsSet('neoyangon_edge_worker', e.target.value.trim()));
+  fillVoices();
+  // Edge TTS (free): your own Cloudflare Worker (edge-tts-worker.js) returns an mp3 for one cue; decoded here to PCM floats.
+  const edgeCtx = new (window.AudioContext || window.webkitAudioContext)();
+  async function edgeSynth(text, voice, url) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, voice }) });
+    if (!r.ok) throw new Error('Edge HTTP ' + r.status + ' ' + (await r.text()).slice(0, 120));
+    const ab = await edgeCtx.decodeAudioData(await r.arrayBuffer());
+    return { f: ab.getChannelData(0), sr: ab.sampleRate };
+  }
   [['#rsSpeed', '#rsSpeedV', v => (+v).toFixed(2) + 'x'], ['#rsZoom', '#rsZoomV', v => v + '%'],
    ['#rsOrig', '#rsOrigV', v => Math.round(v * 100) + '%'], ['#rsMusicVol', '#rsMusicV', v => Math.round(v * 100) + '%']]
     .forEach(([i, o, f]) => $(i).addEventListener('input', () => { $(o).textContent = f($(i).value); }));
@@ -159,7 +182,10 @@
 
   run('#rsVo', async () => {
     const subs = st.subs, total = subs.length;
-    if (!total || subs.every(s => !(s.translatedText || '').trim())) return log('⚠ ဘာသာပြန်အရင်လုပ်ပါ'); if (!need()) return;
+    if (!total || subs.every(s => !(s.translatedText || '').trim())) return log('⚠ ဘာသာပြန်အရင်လုပ်ပါ');
+    const eng = $('#rsEng').value, edgeUrl = $('#rsEdgeUrl').value.trim();
+    if (eng === 'edge') { if (!/^https?:\/\//.test(edgeUrl)) return log('⚠ Edge Worker URL ထည့်ပါ (edge-tts-worker.js ကို Cloudflare မှာ deploy လုပ်ပြီး URL ကူးထည့်ပါ)'); }
+    else if (!need()) return;
     ttsAborted = false;
     const voice = $('#rsVoice').value, speed = +$('#rsSpeed').value, pause = $('#rsPause').value === '1' ? 0.18 : 0.02;
     const clips = new Array(total).fill(null); let next = 0, done = 0;
@@ -169,10 +195,13 @@
         const t = (subs[i].translatedText || '').trim();
         for (let a = 0; t && a < 3 && !clips[i]; a++) {
           try {
-            const { pcmBuffer, sampleRate } = await synthesizeChunk(t, voice);
-            const i16 = new Int16Array(pcmBuffer, 0, pcmBuffer.byteLength >> 1), f = new Float32Array(i16.length);
-            for (let k = 0; k < i16.length; k++) f[k] = i16[k] / 32768;
-            clips[i] = { f, sr: sampleRate };
+            if (eng === 'edge') clips[i] = await edgeSynth(t, voice, edgeUrl);
+            else {
+              const { pcmBuffer, sampleRate } = await synthesizeChunk(t, voice);
+              const i16 = new Int16Array(pcmBuffer, 0, pcmBuffer.byteLength >> 1), f = new Float32Array(i16.length);
+              for (let k = 0; k < i16.length; k++) f[k] = i16[k] / 32768;
+              clips[i] = { f, sr: sampleRate };
+            }
           } catch (e) { if (a === 2) log(`#${i + 1} အသံ မထွက်: ${e.message}`); }
         }
         done++; bar(done / total * 0.8);
