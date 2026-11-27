@@ -2,6 +2,8 @@
 <html lang="my" data-theme="light">
 <head>
     <meta charset="UTF-8">
+    <script>window.addEventListener('error',function(e){var t=e.target,m=(t&&(t.src||t.href))?('LOAD FAIL: '+(t.src||t.href)):((e.message||'error')+' @ '+String(e.filename||'').split('/').pop()+':'+e.lineno+':'+e.colno);var b=document.getElementById('errBanner');if(!b){b=document.createElement('div');b.id='errBanner';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#b00020;color:#fff;font:12px/1.4 monospace;padding:8px;white-space:pre-wrap;word-break:break-all';(document.body||document.documentElement).appendChild(b)}b.textContent+=m+'\n'},true)</script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>NEO-YANGON 2026 | Transcribe + SRT Translator + Holographic Neural TTS Engine</title>
 
@@ -43,7 +45,7 @@
     </script>
 
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="redesign.css">
+    <link rel="stylesheet" href="redesign.css?v=2">
     <script>try{if(!localStorage.getItem('neoyangon_theme'))localStorage.setItem('neoyangon_theme','light')}catch(e){}</script>
 </head>
 
@@ -1155,7 +1157,7 @@
             <div id="keyModalTranscribe"></div>
         </div>
     </div>
-    <script src="script.js"></script>
-    <script src="ui.js"></script>
+    <script src="script.js?v=2"></script>
+    <script src="ui.js?v=2"></script>
 </body>
 </html>
