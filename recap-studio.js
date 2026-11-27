@@ -69,6 +69,25 @@
   });
   const click = (node, fn) => { node.addEventListener('click', fn); node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } }); };
 
+  // Download: fresh blob URL on every tap, link kept in the DOM, revoked late (revoking right away breaks
+  // downloads on phones). Falls back to opening the file, and shows the real error in the log.
+  const saveBlob = (blob, name) => {
+    try {
+      const u = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = u; a.download = name; a.rel = 'noopener'; a.style.display = 'none'; document.body.appendChild(a); a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(u); }, 60000);
+      log('⬇ ' + name + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)');
+    } catch (err) {
+      log('✗ Download မရပါ: ' + ((err && err.message) || err));
+      try { window.open(URL.createObjectURL(blob), '_blank'); } catch (e2) { /* nothing else to try */ }
+    }
+  };
+  const dlBtn = (box, label, getBlob, name) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'rs-dl'; b.textContent = label;
+    b.addEventListener('click', () => { const blob = getBlob(); if (!blob || !blob.size) return log('✗ Download လုပ်စရာ ဖိုင် မရှိပါ'); saveBlob(blob, name); });
+    box.appendChild(b);
+  };
+
   // ---- settings LINKED to the other tabs (two-way) ----
   const mirrors = [];
   function mirror(id, label) {
@@ -77,8 +96,11 @@
     let c; if (o.tagName === 'SELECT') c = document.createElement('select'); else { c = document.createElement('input'); c.type = o.type; ['min', 'max', 'step', 'placeholder'].forEach(a => { if (o.getAttribute(a) !== null) c.setAttribute(a, o.getAttribute(a)); }); }
     c.className = o.type === 'range' ? '' : 'rs-in'; w.appendChild(c);
     const chk = o.type === 'checkbox';
-    const pull = () => { if (chk) { c.checked = o.checked; return; } if (o.tagName === 'SELECT' && c.innerHTML !== o.innerHTML) c.innerHTML = o.innerHTML; if (c.value !== o.value) c.value = o.value; };
-    const push = () => { if (chk) o.checked = c.checked; else o.value = c.value; o.dispatchEvent(new Event('input', { bubbles: true })); o.dispatchEvent(new Event('change', { bubbles: true })); };
+    let shown = null; // live number next to a slider's label, e.g. "Speed 1.3x"
+    if (o.type === 'range') { shown = document.createElement('b'); shown.className = 'rs-val'; w.firstChild.after(' ', shown); }
+    const showVal = () => { if (shown) shown.textContent = (+c.value).toFixed(1) + 'x'; };
+    const pull = () => { if (chk) { c.checked = o.checked; return; } if (o.tagName === 'SELECT' && c.innerHTML !== o.innerHTML) c.innerHTML = o.innerHTML; if (c.value !== o.value) c.value = o.value; showVal(); };
+    const push = () => { if (chk) o.checked = c.checked; else o.value = c.value; showVal(); o.dispatchEvent(new Event('input', { bubbles: true })); o.dispatchEvent(new Event('change', { bubbles: true })); };
     c.addEventListener('input', push); c.addEventListener('change', push); o.addEventListener('input', pull); o.addEventListener('change', pull);
     pull(); mirrors.push(pull); return w;
   }
@@ -176,6 +198,7 @@
     readTtsSettings(); const voice = voiceSelect.value, edge = String(voice).startsWith('edge:');
     if (edge) { if (!/^https?:\/\//.test(safeLsGet(LS_EDGE_URL) || '')) return log('⚠ Edge Worker URL ထည့်ပါ (အပေါ်ကနေရာမှာ)'); } else if (!getKeys().length) return log('⚠ Gemini key မရှိပါ');
     ttsAborted = false; const speed = +speedSlider.value || 1, pause = +$('[data-k="pause"]').value;
+    log('Speed: ' + speed.toFixed(1) + 'x');
     const clips = new Array(total).fill(null); let next = 0, done = 0;
     async function worker() {
       for (;;) {
@@ -205,9 +228,10 @@
     ST.mixed = await oc.startRendering(); bar(1);
     const ch = ST.mixed.getChannelData(0), out = new Int16Array(ch.length);
     for (let k = 0; k < ch.length; k++) { const v = clamp(ch[k], -1, 1); out[k] = v < 0 ? v * 32768 : v * 32767; }
-    const url = URL.createObjectURL(createWavBlob(out.buffer, SR)); const au = $('#rsAudio'); au.src = url; au.hidden = false;
-    const srtUrl = URL.createObjectURL(new Blob([rebuildSrt(subs, { preserveIndex: true })], { type: 'text/plain' }));
-    $('#rsVoLinks').innerHTML = `<a class="rs-dl" download="voiceover.wav" href="${url}">WAV ဒေါင်းလုဒ်</a> <a class="rs-dl" download="translated.srt" href="${srtUrl}">SRT ဒေါင်းလုဒ်</a>`;
+    const wav = createWavBlob(out.buffer, SR), srtBlob = new Blob([rebuildSrt(subs, { preserveIndex: true })], { type: 'text/plain;charset=utf-8'});
+    if (ST.voUrl) URL.revokeObjectURL(ST.voUrl); ST.voUrl = URL.createObjectURL(wav); const au = $('#rsAudio'); au.src = ST.voUrl; au.hidden = false;
+    const links = $('#rsVoLinks'); links.innerHTML = '';
+    dlBtn(links, 'WAV ဒေါင်းလုဒ်', () => wav, 'voiceover.wav'); dlBtn(links, 'SRT ဒေါင်းလုဒ်', () => srtBlob, 'translated.srt');
     mark(4); log(`✓ Voice over ပြီး (${place.length}/${total}) · ${Math.round(cursor)}s`);
   });
 
@@ -340,9 +364,13 @@
     log('Render စတင်ပြီ — စာမျက်နှာကို မပိတ်ပါနဲ့'); rec.start(1000);
     t0 = ac.currentTime + 0.15; vs.start(t0); ms && ms.start(t0); await v.play(); frame();
     await done; if (wake) wake.release(); ac.close(); btn.hidden = true;
-    const type = rec.mimeType || mime || 'video/webm', ext = type.includes('mp4') ? 'mp4' : 'webm', url = URL.createObjectURL(new Blob(parts, { type }));
-    $('#rsOut').innerHTML = `<video controls playsinline src="${url}"></video><a class="rs-dl" download="recap.${ext}" href="${url}">ဗီဒီယို ဒေါင်းလုဒ် (.${ext})</a>`;
-    if (S.autoSrt === '1') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rebuildSrt(ST.subs, { preserveIndex: true })], { type: 'text/plain' })); a.download = 'translated.srt'; a.click(); }
+    const type = rec.mimeType || mime || 'video/webm', ext = type.includes('mp4') ? 'mp4' : 'webm', vblob = new Blob(parts, { type: type.split(';')[0] });
+    if (!vblob.size) throw new Error('Render ထွက်လာတဲ့ဖိုင် ဗလာဖြစ်နေသည် — ပြန်ကြိုးစားပါ');
+    if (ST.outUrl) URL.revokeObjectURL(ST.outUrl); ST.outUrl = URL.createObjectURL(vblob);
+    const out = $('#rsOut'); out.innerHTML = ''; const pvid = document.createElement('video'); pvid.controls = true; pvid.playsInline = true; pvid.src = ST.outUrl; out.appendChild(pvid);
+    const lk = document.createElement('div'); lk.className = 'rs-links'; out.appendChild(lk);
+    dlBtn(lk, 'ဗီဒီယို ဒေါင်းလုဒ် (.' + ext + ')', () => vblob, 'recap.' + ext);
+    dlBtn(lk, 'SRT ဒေါင်းလုဒ်', () => new Blob([rebuildSrt(ST.subs, { preserveIndex: true })], { type: 'text/plain;charset=utf-8' }), 'translated.srt');
     mark(5); log('✓ Render ပြီး');
   });
 })();

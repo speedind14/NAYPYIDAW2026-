@@ -156,3 +156,7 @@ html[data-theme] main button.rs-ic{min-height:38px;width:38px;padding:0;border-r
 .rs-tile.on{background:var(--grad);color:#fff;border-color:transparent}
 .rs-dots{display:flex;gap:10px}.rs-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);cursor:pointer}
 .rs-prev canvas{touch-action:none}
+
+/* Recap Studio: live slider number + download buttons */
+.rs .rs-val{color:var(--b1);font-weight:700;margin-left:4px}
+html[data-theme] main button.rs-dl{min-height:42px;padding:10px 16px;margin-top:8px;display:inline-flex;align-items:center;justify-content:center}
