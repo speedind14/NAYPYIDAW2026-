@@ -125,3 +125,11 @@ html[data-theme] body nav .tab-btn.tab-active{background:var(--grad)!important;c
 .rs-links{display:flex;gap:8px;flex-wrap:wrap}
 a.rs-dl{display:inline-flex;margin-top:8px;padding:10px 16px;border-radius:14px;background:var(--grad);color:#fff!important;font-weight:600;font-size:13.5px;text-decoration:none}
 .rs input[type=range]{width:100%}
+
+/* Recap Studio previews */
+#rsInV{width:100%;border-radius:14px;background:#000;max-height:50vh}
+.rs-h4{font-size:13px;font-weight:700;color:var(--mute);margin-top:2px}
+.rs-prev canvas{width:100%;height:auto;border-radius:14px;background:#000;display:block}
+.rs-pc{display:flex;align-items:center;gap:8px;margin-top:8px}.rs-pc input{flex:1}
+.rs-pc span{font-size:12px;color:var(--mute);white-space:nowrap}
+html[data-theme] main button.rs-ic{min-height:38px;width:38px;padding:0;border-radius:50%;flex:none}
