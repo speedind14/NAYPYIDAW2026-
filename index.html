@@ -45,7 +45,7 @@
     </script>
 
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="redesign.css?v=3">
+    <link rel="stylesheet" href="redesign.css?v=4">
     <script>try{if(!localStorage.getItem('neoyangon_theme'))localStorage.setItem('neoyangon_theme','light')}catch(e){}</script>
 </head>
 
@@ -857,10 +857,7 @@
                 <div class="flex items-start gap-2.5 mb-4 px-1 py-2 rounded-lg bg-black/30 border border-cyan-500/20">
                     <input type="checkbox" id="transcribeWaveformSyncToggle" checked
                         class="mt-0.5 w-4 h-4 rounded accent-cyan-500 cursor-pointer flex-shrink-0">
-                    <label for="transcribeWaveformSyncToggle" class="font-mono text-[10px] text-cyan-300 uppercase tracking-widest cursor-pointer select-none leading-relaxed">
-                        WAVEFORM SYNC — Cue timing ကို actual voice onset/offset (waveform energy) အပေါ် အခြေခံပြီး ချိန်ညှိမည်၊ စာသားရှည်လျှင် ဖတ်ရန်လုံလောက်အောင် duration တိုးပေးမည်
-                        <span class="block normal-case text-cyan-500/50 mt-1">(TRANSCRIBE + AI TRANSCRIBE (GEMINI) နှစ်ခုစလုံးအတွက်)</span>
-                    </label>
+                    <label for="transcribeWaveformSyncToggle" class="font-mono text-[10px] text-cyan-300 uppercase tracking-widest cursor-pointer select-none leading-relaxed">Waveform Sync (အသံနဲ့ အချိန်ကိုက်ရန်)</label>
                 </div>
                 <div class="flex flex-wrap gap-3 justify-center">
                     <button id="clearTranscribeBtn" class="px-4 py-3 rounded-lg bg-black/40 hover:bg-red-950/50 border border-red-500/30 text-red-300 font-mono text-sm tracking-wider flex items-center justify-center gap-2 transition-all hover:border-red-400">
@@ -1151,14 +1148,14 @@
         <div class="sheet">
             <div class="sheet-head"><button id="closeKeysBtn" aria-label="ပြန်ထွက်ရန်"><i class="fa-solid fa-arrow-left"></i></button><h2 id="keyModalTitle">API keys</h2></div>
             <div id="keyRows" class="kcard"></div>
-            <p class="note" style="margin:10px 4px">Key အားလုံးကို ဒီနေရာမှာ တစ်ခါတည်း ထည့်ပါ။ Add ကိုနှိပ်ပြီး ထည့်၊ အောက်က SAVE နှိပ်ပါ။ ဒီ browser ထဲမှာပဲ သိမ်းပါတယ်။</p>
+            <p class="note" style="margin:10px 4px">Add နှိပ်ပြီး key ထည့်၊ အောက်က SAVE နှိပ်ပါ။</p>
             <h3>Gemini · Models &amp; Save</h3>
             <div id="keyModalGemini"></div>
             <h3>Transcribe · Models &amp; Save</h3>
             <div id="keyModalTranscribe"></div>
         </div>
     </div>
-    <script src="script.js?v=3"></script>
-    <script src="ui.js?v=3"></script>
+    <script src="script.js?v=4"></script>
+    <script src="ui.js?v=4"></script>
 </body>
 </html>

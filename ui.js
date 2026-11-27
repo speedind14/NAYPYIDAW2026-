@@ -15,6 +15,14 @@
     if (p) p.innerHTML = 'Gemini key ကို အပေါ်က <b>API KEYS</b> ခလုတ်မှာ တစ်ခါပဲ ထည့်ရပါတယ်။';
   });
 
+  // Hide long explanatory notes (keep the yellow warning); drop cards left empty.
+  document.querySelectorAll('p[class*="text-[10px]"]').forEach(p => {
+    if (/text-yellow/.test(p.className)) return;
+    p.style.display = 'none';
+    const c = p.parentElement;
+    if (c && c.classList.contains('holo-glass') && c.children.length === 1) c.style.display = 'none';
+  });
+
   // One row per service: name, status, Add/Replace button that opens that service's key box.
   const services = [['apiKeysInput', 'Gemini', 'Speech · Translate · Recap'], ['gladiaKeysInput', 'Gladia', 'Transcribe'],
                     ['groqKeysInput', 'Groq', 'Transcribe (Whisper)'], ['assemblyaiKeysInput', 'AssemblyAI', 'Transcribe']];
